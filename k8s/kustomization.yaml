@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - base/storage/persistent-volume-claims.yaml
+  - base/storage/storage-class.yaml
+  - base/config/configmap.yaml
+  - base/elasticsearch/elasticsearch-deployment.yaml
+  - base/elasticsearch/elasticsearch-service.yaml
+  - base/indexify/indexify-deployment.yaml
+  - base/indexify/indexify-service.yaml
+  - base/executors/pdf-parser-deployment.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: indexify
+      app.kubernetes.io/part-of: indexify-platform
+
+images:
+  - name: tensorlake/indexify-server
+    newTag: latest
+  - name: tensorlake/pdf-blueprint-pdf-parser-gpu
+    newTag: latest
+  - name: docker.elastic.co/elasticsearch/elasticsearch
+    newTag: 8.17.0

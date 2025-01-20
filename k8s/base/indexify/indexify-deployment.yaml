@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: indexify
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: indexify
+  template:
+    metadata:
+      labels:
+        app: indexify
+    spec:
+      containers:
+      - name: indexify
+        image: tensorlake/indexify-server
+        ports:
+        - containerPort: 8900
+        volumeMounts:
+        - name: data
+          mountPath: /tmp/indexify-blob-storage
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: indexify-pvc

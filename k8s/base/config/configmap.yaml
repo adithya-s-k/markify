@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: indexify-config
+data:
+  ELASTICSEARCH_URL: "http://elasticsearch:9200"
+  CHROMA_URL: "http://chromadb:8000"

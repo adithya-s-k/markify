@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pdf-parser
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pdf-parser
+  template:
+    metadata:
+      labels:
+        app: pdf-parser
+    spec:
+      nodeSelector:
+        sku: gpu
+      tolerations:
+      - key: "sku"
+        operator: "Equal"
+        value: "gpu"
+        effect: "NoSchedule"
+      containers:
+      - name: pdf-parser
+        image: tensorlake/pdf-blueprint-pdf-parser-gpu:latest
+        command: ["indexify-cli", "executor", "-f", "default:Extract_pages_tables_images_pdf_docling:pdf-parse-docling:0.1", "--server-addr", "indexify:8900"]
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - name: data
+          mountPath: /tmp/indexify-blob-storage
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: indexify-pvc
