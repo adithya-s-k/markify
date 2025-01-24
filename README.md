@@ -93,23 +93,22 @@ az account set --subscription <your-subscription-id> # or if net, then login on 
 2. AKS cluster with GPU :
 ```bash
 az aks create \
-    --resource-group <your_resource_name> \ # kubernetees_test
-    --name <kube_servive_name> \ # named it docling_indexify
-    --node-count 2 \ # based on available nodes and such on ur subscription and location (read aks docs to check that)
+    --resource-group <your_resource_name> \ # omniparse_kubecluster
+    --name <kube_servive_name> \ # named it markify
+    --node-count 2 \
     --enable-cluster-autoscaler \
     --min-count 1 \
     --max-count 5 \
-    --node-vm-size Standard_NC6s_v3 \ # depends on your subscription
+    --node-vm-size Standard_NC4as_T4_v3 \
     --generate-ssh-keys \
     --network-plugin azure
 
-# add gpu node pool
 az aks nodepool add \
-    --resource-group <your_resource_name> \ # kubernetees_test
-    --cluster-name <kube_servive_name> \ # named it docling_indexify
-    --name <name_your_node> \
+    --resource-group <your_resource_name> \ # omniparse_kubecluster
+    --cluster-name <kube_servive_name> \ # named it markify
+    --name gpunodepool \
     --node-count 1 \
-    --node-vm-size Standard_NC6s_v3 \
+    --node-vm-size Standard_NC4as_T4_v3 \
     --node-taints sku=gpu:NoSchedule \
     --labels sku=gpu
 
@@ -118,7 +117,7 @@ az aks get-credentials --resource-group <your_resource_name> --name <kube_serviv
 
 ### 1. deploy nvidia plugin
 ```bash
-kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.1/nvidia-device-plugin.yml
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.1/nvidia-device-plugin.yml --validate=false
 ```
 
 ### 2. deploy application
@@ -132,6 +131,26 @@ for production environment:
 ```bash
 kubectl apply -k k8s/overlays/production
 ```
+
+
+kubectl get svc -n production indexify -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+# Run tests (replace <EXTERNAL-IP> with actual IP)
+python3 tests/test_api.py
+
+
+Scaling Test:
+
+Start load test from multiple terminals:
+
+bash
+Copy
+# In terminal 1
+python3 tests/test_api.py
+
+# In terminal 2
+kubectl get pods -n production -w
+
+
 
 Check all components are running:
 ```bash
@@ -153,6 +172,14 @@ kubectl describe nodes | grep -i gpu
 kubectl get pods -n development  # or indexify-prod
 kubectl describe pods -n development  # Check for any issues
 ```
+
+
+python3 -m pytest -s -v tests/test_api.py \
+  --log-cli-level=INFO \
+  --disable-warnings
+
+kubectl get pods -n production \
+  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}'
 
 ### 2. check services
   ```bash

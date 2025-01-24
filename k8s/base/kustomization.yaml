@@ -6,6 +6,7 @@ resources:
   - elasticsearch/elasticsearch-deployment.yaml
   - elasticsearch/elasticsearch-service.yaml
   - executors/pdf-parser-deployment.yaml
+  - executors/hpa-pdf-parser.yaml
   - indexify/indexify-deployment.yaml
   - indexify/indexify-service.yaml
   - storage/persistent-volume-claims.yaml
