@@ -218,3 +218,5 @@ kubectl delete -k k8s/overlays/production
 
 az aks delete --resource-group <your_resource_name> --name <kube_servive_name>
 ```
+
+![alt text](https://github.com/adithya-s-k/markify/blob/main/terminal.png?raw=true)
