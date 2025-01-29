@@ -187,3 +187,6 @@ tmp/
 # docker
 .docker/
 *.dockerignore
+
+
+.pytest_cache/

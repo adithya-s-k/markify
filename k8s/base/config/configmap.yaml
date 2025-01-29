@@ -1,3 +1,4 @@
+# k8s/base/config/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
