@@ -19,11 +19,11 @@ spec:
         command: ["indexify-cli", "executor", "-f", "default:Extract_pages_tables_images_pdf_docling:pdf-parse-docling:0.1", "--server-addr", "indexify:8900"]
         resources:
           limits:
-            cpu: "2"
-            memory: "8Gi"
+            cpu: 2
+            memory: 1Gi
           requests:
-            cpu: "1"
-            memory: "4Gi"
+            cpu: 1
+            memory: 512Mi
         volumeMounts:
         - name: data
           mountPath: /tmp/indexify-blob-storage

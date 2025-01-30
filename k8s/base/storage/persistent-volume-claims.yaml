@@ -6,10 +6,10 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: azure-disk-standard
+  storageClassName: azurefile-csi 
   resources:
     requests:
-      storage: 50Gi
+      storage: 20Gi
 
 ---
 
@@ -20,7 +20,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: azure-disk-standard
+  storageClassName: managed-csi
   resources:
     requests:
-      storage: 50Gi
+      storage: 20Gi

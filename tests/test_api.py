@@ -7,12 +7,12 @@ import subprocess
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
+OVERLAY_MODE = ['development', 'production']
 # Fetch the external IP of the indexify service dynamically
 def get_external_ip():
     try:
         result = subprocess.run(
-            ["kubectl", "get", "svc", "-n", "production", "indexify", "-o", "jsonpath='{.status.loadBalancer.ingress[0].ip}'"],
+            ["kubectl", "get", "svc", "-n", OVERLAY_MODE[1], "indexify", "-o", "jsonpath='{.status.loadBalancer.ingress[0].ip}'"],
             capture_output=True,
             text=True,
             check=True

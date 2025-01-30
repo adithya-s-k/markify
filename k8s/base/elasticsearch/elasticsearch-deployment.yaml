@@ -26,9 +26,9 @@ spec:
           value: "-Xms4g -Xmx4g"
         resources:
           limits:
-            memory: 8Gi
+            memory: 1Gi
           requests:
-            memory: 4Gi
+            memory: 512Mi
         volumeMounts:
         - name: elasticsearch-data
           mountPath: /usr/share/elasticsearch/data

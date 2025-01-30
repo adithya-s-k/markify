@@ -115,6 +115,34 @@ az aks nodepool add \
 az aks get-credentials --resource-group <your_resource_name> --name <kube_servive_name>
 ```
 
+
+az aks create \
+--resource-group omniparse_kubecluster \
+--name markify \
+--node-count 2 \
+--enable-cluster-autoscaler \
+--min-count 1 \
+--max-count 5 \
+--node-vm-size Standard_A2_v2 \
+--generate-ssh-keys \
+--network-plugin azure
+
+
+az aks get-credentials --resource-group omniparse_kubecluster --name markify
+
+kubectl apply -k k8s/base
+
+kubectl apply -k k8s/overlays/production
+
+kubectl get all -n production
+
+kubectl get svc -n production indexify -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+python3 tests/test_api.py
+kubectl get pods -n production -w
+
+
+
 ### 1. deploy nvidia plugin
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.1/nvidia-device-plugin.yml --validate=false
