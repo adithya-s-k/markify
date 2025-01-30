@@ -20,7 +20,7 @@ labels:
 images:
   - name: tensorlake/indexify-server
     newTag: latest
-  - name: tensorlake/pdf-blueprint-pdf-parser-gpu
+  - name: tensorlake/pdf-blueprint-pdf-parser
     newTag: latest
   - name: docker.elastic.co/elasticsearch/elasticsearch
     newTag: 8.17.0
