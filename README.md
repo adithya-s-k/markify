@@ -74,177 +74,276 @@ You have to make a couple of changes to use GPUs for PDF parsing.
 
 ---
 
-# deployment
+# Deployment Guide
 
 ## Prerequisites
 
-- azure-cli
-- kubectl
-- docker (local testing)
+- **azure-cli**
+- **kubectl**
+- **docker** (for local testing)
 
-## AKS cluster
+---
 
-1. Login to Azure and set subscription:
+## AKS Cluster Setup
+
+### 1. Login to Azure and Set Subscription
+
 ```bash
 az login
-az account set --subscription <your-subscription-id> # or if net, then login on web before running az login, automatic then
+az account set --subscription <your-subscription-id>
 ```
+*(If network issues occur, login via web before running `az login`)*
 
-2. AKS cluster with GPU :
+### 2. Create AKS Cluster with GPU Nodes
+
 ```bash
-az aks create \
-    --resource-group <your_resource_name> \ # omniparse_kubecluster
-    --name <kube_servive_name> \ # named it markify
-    --node-count 2 \
-    --enable-cluster-autoscaler \
-    --min-count 1 \
-    --max-count 5 \
-    --node-vm-size Standard_NC4as_T4_v3 \
-    --generate-ssh-keys \
-    --network-plugin azure
-
-az aks nodepool add \
-    --resource-group <your_resource_name> \ # omniparse_kubecluster
-    --cluster-name <kube_servive_name> \ # named it markify
-    --name gpunodepool \
-    --node-count 1 \
-    --node-vm-size Standard_NC4as_T4_v3 \
-    --node-taints sku=gpu:NoSchedule \
-    --labels sku=gpu
-
-az aks get-credentials --resource-group <your_resource_name> --name <kube_servive_name>
+az aks create     --resource-group <your_resource_name> \  # e.g., omniparse_kubecluster
+    --name <kube_service_name> \  # e.g., markify
+    --node-count 2     --enable-cluster-autoscaler     --min-count 1     --max-count 5     --node-vm-size Standard_NC4as_T4_v3     --generate-ssh-keys     --network-plugin azure
 ```
 
+#### Add GPU Node Pool
 
-az aks create \
---resource-group omniparse_kubecluster \
---name markify \
---node-count 2 \
---enable-cluster-autoscaler \
---min-count 1 \
---max-count 5 \
---node-vm-size Standard_A2_v2 \
---generate-ssh-keys \
---network-plugin azure
+```bash
+az aks nodepool add     --resource-group <your_resource_name> \  # e.g., omniparse_kubecluster
+    --cluster-name <kube_service_name> \  # e.g., markify
+    --name gpunodepool     --node-count 1     --node-vm-size Standard_NC4as_T4_v3     --node-taints sku=gpu:NoSchedule     --labels sku=gpu
+```
 
+#### Get AKS Credentials
 
+```bash
+az aks get-credentials --resource-group <your_resource_name> --name <kube_service_name>
+```
+
+---
+
+### 3. Create AKS Cluster with CPU Nodes
+
+```bash
+az aks create     --resource-group omniparse_kubecluster     --name markify     --node-count 2     --enable-cluster-autoscaler     --min-count 1     --max-count 5     --node-vm-size Standard_A2m_v2     --generate-ssh-keys     --network-plugin azure
+```
+
+#### Get AKS Credentials
+
+```bash
 az aks get-credentials --resource-group omniparse_kubecluster --name markify
+```
 
+---
+
+## Apply Kubernetes Manifests
+
+```bash
 kubectl apply -k k8s/base
-
 kubectl apply -k k8s/overlays/production
+```
 
+### 4. Get Cluster Resources
+
+```bash
 kubectl get all -n production
+```
 
+### 5. Get External IP for Indexify Service
+
+```bash
 kubectl get svc -n production indexify -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
 
+### 6. Run API Tests
+
+```bash
 python3 tests/test_api.py
+```
+
+### 7. Monitor Pods
+
+```bash
 kubectl get pods -n production -w
+```
 
+---
 
+## NVIDIA Plugin Deployment
 
-### 1. deploy nvidia plugin
+To enable GPU support on AKS, deploy the NVIDIA plugin:
+
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.1/nvidia-device-plugin.yml --validate=false
 ```
 
-### 2. deploy application
+---
 
-for development/testing environment:
+## Deploy Application
+
+### Development/Testing Environment
+
 ```bash
 kubectl apply -k k8s/overlays/development
 ```
 
-for production environment:
+### Production Environment
+
 ```bash
 kubectl apply -k k8s/overlays/production
 ```
 
+---
 
-kubectl get svc -n production indexify -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-# Run tests (replace <EXTERNAL-IP> with actual IP)
-python3 tests/test_api.py
+### 8. Run API Tests (Production)
 
+Replace `<EXTERNAL-IP>` with the actual IP:
 
-Scaling Test:
-
-Start load test from multiple terminals:
-
-bash
-Copy
-# In terminal 1
-python3 tests/test_api.py
-
-# In terminal 2
-kubectl get pods -n production -w
-
-
-
-Check all components are running:
 ```bash
-kubectl get all -n development 
+python3 tests/test_api.py
+```
 
-# For production
+---
+
+## Scaling Test
+
+To scale the service and test it, start the load test from multiple terminals:
+
+#### In Terminal 1
+
+```bash
+python3 tests/test_api.py
+```
+
+#### In Terminal 2
+
+```bash
+kubectl get pods -n production -w
+```
+
+---
+
+## Check All Components Are Running
+
+For **Development**:
+
+```bash
+kubectl get all -n development
+```
+
+For **Production**:
+
+```bash
 kubectl get all -n production
 ```
 
-## sanity checks
+---
 
-### 1. cluster health
+## Sanity Checks
+
+### 1. Cluster Health
+
+#### Check Nodes
+
 ```bash
-# nodes check
 kubectl get nodes
 kubectl describe nodes | grep -i gpu
+```
 
-# pods cehck (same for production too)
-kubectl get pods -n development  # or indexify-prod
+#### Check Pods
+
+For **Development**:
+
+```bash
+kubectl get pods -n development
 kubectl describe pods -n development  # Check for any issues
 ```
 
+For **Production**:
 
-python3 -m pytest -s -v tests/test_api.py \
-  --log-cli-level=INFO \
-  --disable-warnings
+```bash
+kubectl get pods -n production
+kubectl describe pods -n production  # Check for any issues
+```
 
-kubectl get pods -n production \
-  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}'
+#### Run API Tests
 
-### 2. check services
-  ```bash
+```bash
+python3 -m pytest -s -v tests/test_api.py --log-cli-level=INFO --disable-warnings
+```
+
+#### Get Pod Start Times
+
+```bash
+kubectl get pods -n production -o jsonpath='{range .items[*]}{.metadata.name}{"	"}{.status.startTime}{"
+"}{end}'
+```
+
+### 2. Check Services
+
+For **Development**:
+
+```bash
 kubectl get svc -n indexify-dev
+```
 
-# logs(same for production too)
+For **Production**:
+
+```bash
+kubectl get svc -n indexify-prod
+```
+
+#### View Logs
+
+For **Development**:
+
+```bash
 kubectl logs -n development deployment/indexify
 kubectl logs -n development deployment/pdf-parser
 ```
 
-### monitoring usage
+For **Production**:
 
 ```bash
-kubectl get pods -n development -o wide # or production
-kubectl describe nodes | grep -A8 "Allocated resources"
+kubectl logs -n production deployment/indexify
+kubectl logs -n production deployment/pdf-parser
+```
 
-kubectl top pods -n development # or production
+---
+
+## Monitoring Usage
+
+```bash
+kubectl get pods -n development -o wide  # or production
+kubectl describe nodes | grep -A8 "Allocated resources"
+kubectl top pods -n development  # or production
 kubectl top nodes
 ```
 
-### scaling
-haven't tested yet! but shoudl work (kube commands)
+---
+
+## Scaling
+
+To scale deployments:
 
 ```bash
-kubectl scale deployment pdf-parser -n development --replicas=2 # or production
-
-kubectl scale deployment indexify -n development --replicas=3 # or production
+kubectl scale deployment pdf-parser -n development --replicas=2  # or production
+kubectl scale deployment indexify -n development --replicas=3  # or production
 ```
 
-## teardown 
+---
 
-remove deployment:
+## Teardown
+
+To remove the deployment:
+
 ```bash
 kubectl delete -k k8s/overlays/development
 kubectl delete -k k8s/overlays/production
-
-az aks delete --resource-group <your_resource_name> --name <kube_servive_name>
 ```
 
-![alt text](https://github.com/adithya-s-k/markify/blob/main/terminal.png?raw=true)
+To delete the AKS cluster:
+
+```bash
+az aks delete --resource-group <your_resource_name> --name <kube_service_name>
+```
+
+---
+
+![Terminal Screenshot](https://github.com/adithya-s-k/markify/blob/main/terminal.png?raw=true)
